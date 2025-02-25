@@ -6,13 +6,14 @@ from http.server import HTTPServer, BaseHTTPRequestHandler, \
     SimpleHTTPRequestHandler
 from os import listdir
 from os.path import isfile, join
+from PIL import Image
 
 from loguru import logger
 
 SERVER_ADDRESS = ('0.0.0.0', 8000)
 ALLOWED_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.gif')
 ALLOWED_LENGTH = (5 * 1024 * 1024)
-UPLOAD_DIRECTORY = 'images'
+UPLOAD_DIR = 'images'
 logger.add('logs/app.log', format="[{time: YYYY-MM-DD HH:mm:ss}] | {level} | {message}")
 
 
@@ -58,7 +59,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json; charset=utf-8')
         self.end_headers()
 
-        images = [f for f in listdir(UPLOAD_DIRECTORY) if isfile(join('images', f))]
+        images = [f for f in listdir(UPLOAD_DIR) if isfile(join('images', f))]
         self.wfile.write(json.dumps({'images': images}).encode('utf-8'))
 
     def get_upload(self):
@@ -92,14 +93,23 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
             self.send_response(400, 'File type not allowed')
             return
 
+
         image_id = uuid.uuid4()
         image_name = f'{image_id}{ext}'
-        with open(f'{UPLOAD_DIRECTORY}/{image_name}', 'wb') as f:
+        with open(f'{UPLOAD_DIR}/{image_name}', 'wb') as f:
             f.write(data.read())
+
+        try:
+            im = Image.open(f'{UPLOAD_DIR}/{image_name}')
+            im.verify()
+        except (IOError, SyntaxError) as e:
+            logger.error(f'Invalid file: {e}')
+            self.send_response(400, 'Invalid file')
+            return
 
         logger.info(f'Upload success: {image_name}')
         self.send_response(301)
-        self.send_header('Location', f'/{images}/{image_name}')
+        self.send_header('Location', f'/images/{image_name}')
         self.end_headers()
 
 
