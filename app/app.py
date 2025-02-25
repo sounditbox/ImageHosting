@@ -20,6 +20,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
     server_version = 'Image Hosting Server/0.1'
 
     def __init__(self, request, client_address, server):
+        """Initialize the handler with routing for GET and POST requests."""
         self.get_routes = {
             '/upload': ImageHostingHandler.get_upload,
             '/images': ImageHostingHandler.get_images,
@@ -27,14 +28,15 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.post_routes = {
             '/upload': ImageHostingHandler.post_upload,
         }
-
         super().__init__(request, client_address, server)
 
     def end_headers(self):
+        """Add custom headers before ending the HTTP response headers."""
         self.send_header('Access-Control-Allow-Origin', '*')
         SimpleHTTPRequestHandler.end_headers(self)
 
     def do_GET(self):
+        """Handle GET requests by routing to the appropriate handler or returning a 404 error."""
         if self.path in self.get_routes:
             self.get_routes[self.path](self)
         else:
@@ -42,6 +44,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
             self.send_response(404, 'Not Found')
 
     def get_images(self):
+        """Handle GET request to retrieve the list of image filenames in JSON format."""
         logger.info(f'GET {self.path}')
         self.send_response(200)
         self.send_header('Content-type', 'application/json; charset=utf-8')
@@ -51,6 +54,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps({'images': images}).encode('utf-8'))
 
     def get_upload(self):
+        """Handle GET request to render the upload page."""
         logger.info(f'GET {self.path}')
         self.send_response(200)
         self.send_header('Content-type', 'text/html; charset=utf-8')
@@ -58,6 +62,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.wfile.write(open('static/upload.html', 'rb').read())
 
     def do_POST(self):
+        """Handle POST requests by routing to the appropriate handler or returning a 405 error."""
         if self.path in self.post_routes:
             self.post_routes[self.path](self)
         else:
@@ -65,6 +70,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
             self.send_response(405, 'Method Not Allowed')
 
     def post_upload(self):
+        """Handle POST request to upload an image."""
         logger.info(f'POST {self.path}')
         content_length = int(self.headers.get('Content-Length'))
         if content_length > ALLOWED_LENGTH:
