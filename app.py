@@ -93,7 +93,6 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
             self.send_response(400, 'File type not allowed')
             return
 
-
         image_id = uuid.uuid4()
         image_name = f'{image_id}{ext}'
         with open(f'{UPLOAD_DIR}/{image_name}', 'wb') as f:
