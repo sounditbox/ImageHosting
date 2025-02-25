@@ -5,12 +5,12 @@ networks:
 services:
   app:
     container_name: app
-    build: ./app
+    build: .
     ports:
       - "8000:8000"
     volumes:
-      - ./app/images:/app/images
-      - ./app/logs:/app/logs
+      - ./images:/app/images
+      - ./logs:/app/logs
     networks:
       - default
 
@@ -21,9 +21,9 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./app/images:/images
-      - ./app/logs:/var/log/nginx
-      - ./app/static:/etc/nginx/html
+      - ./images:/images
+      - ./logs:/var/log/nginx
+      - ./static:/etc/nginx/html
       - ./nginx.conf:/etc/nginx/nginx.conf
     networks:
       - default

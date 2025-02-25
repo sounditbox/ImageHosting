@@ -58,7 +58,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json; charset=utf-8')
         self.end_headers()
 
-        images = [f for f in listdir('./images') if isfile(join('./images', f))]
+        images = [f for f in listdir('images') if isfile(join('images', f))]
         self.wfile.write(json.dumps({'images': images}).encode('utf-8'))
 
     def get_upload(self):
