@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 import cgi
 from http.server import HTTPServer, BaseHTTPRequestHandler, \
@@ -9,7 +10,7 @@ from os.path import isfile, join
 from loguru import logger
 
 SERVER_ADDRESS = ('0.0.0.0', 8000)
-ALLOWED_EXTENSIONS = ('jpg', 'jpeg', 'png', 'gif')
+ALLOWED_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.gif')
 ALLOWED_LENGTH = (5 * 1024 * 1024)
 
 logger.add('logs/app.log', format="[{time: YYYY-MM-DD HH:mm:ss}] | {level} | {message}")
@@ -72,21 +73,27 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
             headers=self.headers,
             environ={'REQUEST_METHOD': 'POST'}
         )
-        logger.info(form)
         data = form['image'].file
-        image_id = uuid.uuid4()
 
-        with open(f'images/{image_id}', 'wb') as f:
+        _, ext = os.path.splitext(form['image'].filename)
+
+        if ext not in ALLOWED_EXTENSIONS:
+            logger.error('File type not allowed')
+            self.send_response(400, 'File type not allowed')
+            return
+
+        image_id = uuid.uuid4()
+        with open(f'images/{image_id}{ext}', 'wb') as f:
             f.write(data.read())
 
-        logger.info(f'Upload success: {image_id}')
+        logger.info(f'Upload success: {image_id}{ext}')
         self.send_response(201)
         self.send_header('Location',
-                        f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/images/{image_id}')
+                        f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/images/{image_id}{ext}')
 
         self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
-        self.wfile.write(open('upload_success.html', 'rb').read())
+        self.wfile.write(open('static/upload_success.html', 'rb').read())
 
 
 get_routes = {
