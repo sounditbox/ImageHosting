@@ -1,9 +1,6 @@
 networks:
   default:
 
-volumes:
-  images:
-  logs:
 
 services:
   app:
@@ -12,8 +9,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - images:/app/images
-      - logs:/app/logs
+      - ./app/images:/app/images
+      - ./app/logs:/app/logs
     networks:
       - default
 
@@ -24,8 +21,8 @@ services:
     ports:
       - "80:80"
     volumes:
-      - images:/images
-      - logs:/var/log/nginx
+      - ./app/images:/images
+      - ./app/logs:/var/log/nginx
       - ./app/static:/etc/nginx/html
       - ./nginx.conf:/etc/nginx/nginx.conf
     networks:
