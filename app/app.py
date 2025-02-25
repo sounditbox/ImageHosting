@@ -87,13 +87,9 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
             f.write(data.read())
 
         logger.info(f'Upload success: {image_id}{ext}')
-        self.send_response(201)
-        self.send_header('Location',
-                        f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/images/{image_id}{ext}')
-
-        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.send_response(301)
+        self.send_header('Location', f'/images/{image_id}{ext}')
         self.end_headers()
-        self.wfile.write(open('static/upload_success.html', 'rb').read())
 
 
 get_routes = {
