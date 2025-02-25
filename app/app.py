@@ -1,7 +1,7 @@
+import cgi
 import json
 import os
 import uuid
-import cgi
 from http.server import HTTPServer, BaseHTTPRequestHandler, \
     SimpleHTTPRequestHandler
 from os import listdir
@@ -29,13 +29,6 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         else:
             logger.warning(f'GET 404 {self.path}')
             self.send_response(404, 'Not Found')
-
-    def get_index(self):
-        logger.info(f'GET {self.path}')
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html; charset=utf-8')
-        self.end_headers()
-        self.wfile.write(open('static/index.html', 'rb').read())
 
     def get_images(self):
         logger.info(f'GET {self.path}')
@@ -93,8 +86,6 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
 
 
 get_routes = {
-        '/': ImageHostingHandler.get_index,
-        '/index.html': ImageHostingHandler.get_index,
         '/upload': ImageHostingHandler.get_upload,
         '/images': ImageHostingHandler.get_images,
         }
