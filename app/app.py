@@ -19,13 +19,24 @@ logger.add('logs/app.log', format="[{time: YYYY-MM-DD HH:mm:ss}] | {level} | {me
 class ImageHostingHandler(BaseHTTPRequestHandler):
     server_version = 'Image Hosting Server/0.1'
 
+    def __init__(self, request, client_address, server):
+        self.get_routes = {
+            '/upload': ImageHostingHandler.get_upload,
+            '/images': ImageHostingHandler.get_images,
+        }
+        self.post_routes = {
+            '/upload': ImageHostingHandler.post_upload,
+        }
+
+        super().__init__(request, client_address, server)
+
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         SimpleHTTPRequestHandler.end_headers(self)
 
     def do_GET(self):
-        if self.path in get_routes:
-            get_routes[self.path](self)
+        if self.path in self.get_routes:
+            self.get_routes[self.path](self)
         else:
             logger.warning(f'GET 404 {self.path}')
             self.send_response(404, 'Not Found')
@@ -47,8 +58,8 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.wfile.write(open('static/upload.html', 'rb').read())
 
     def do_POST(self):
-        if self.path in post_routes:
-            post_routes[self.path](self)
+        if self.path in self.post_routes:
+            self.post_routes[self.path](self)
         else:
             logger.warning(f'POST 404 {self.path}')
             self.send_response(405, 'Method Not Allowed')
@@ -84,15 +95,6 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.send_header('Location', f'/images/{image_id}{ext}')
         self.end_headers()
 
-
-get_routes = {
-        '/upload': ImageHostingHandler.get_upload,
-        '/images': ImageHostingHandler.get_images,
-        }
-
-post_routes = {
-    '/upload': ImageHostingHandler.post_upload,
-}
 
 def run():
     httpd = HTTPServer(SERVER_ADDRESS, ImageHostingHandler)
