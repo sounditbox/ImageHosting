@@ -1,5 +1,6 @@
 import json
 import uuid
+import cgi
 from http.server import HTTPServer, BaseHTTPRequestHandler, \
     SimpleHTTPRequestHandler
 from os import listdir
@@ -17,20 +18,13 @@ logger.add('logs/app.log', format="[{time: YYYY-MM-DD HH:mm:ss}] | {level} | {me
 class ImageHostingHandler(BaseHTTPRequestHandler):
     server_version = 'Image Hosting Server/0.1'
 
-    routes = {
-        '/': 'get_index',
-        '/index.html': 'get_index',
-        '/upload': 'post_upload',
-        '/images': 'get_images',
-    }
-
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         SimpleHTTPRequestHandler.end_headers(self)
 
     def do_GET(self):
-        if self.path in self.routes:
-            exec(f'self.{self.routes[self.path]}()')
+        if self.path in get_routes:
+            get_routes[self.path](self)
         else:
             logger.warning(f'GET 404 {self.path}')
             self.send_response(404, 'Not Found')
@@ -51,9 +45,16 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         images = [f for f in listdir('./images') if isfile(join('./images', f))]
         self.wfile.write(json.dumps({'images': images}).encode('utf-8'))
 
+    def get_upload(self):
+        logger.info(f'GET {self.path}')
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(open('static/upload.html', 'rb').read())
+
     def do_POST(self):
-        if self.path == '/upload':
-            exec(f'self.{self.routes[self.path]}()')
+        if self.path in post_routes:
+            post_routes[self.path](self)
         else:
             logger.warning(f'POST 404 {self.path}')
             self.send_response(405, 'Method Not Allowed')
@@ -66,33 +67,38 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
             self.send_response(413, 'Payload Too Large')
             return
 
-        filename = self.headers.get('Filename')
-
-        if not filename:
-            logger.error('Lack of Filename header')
-            self.send_response(400, 'Lack of Filename header')
-            return
-        filename, ext = filename.split('.')
-        if ext not in ALLOWED_EXTENSIONS:
-            logger.error('Unsupported file extension')
-            self.send_response(400, 'Unsupported file extension')
-            return
-
-        data = self.rfile.read(content_length)
+        form = cgi.FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ={'REQUEST_METHOD': 'POST'}
+        )
+        logger.info(form)
+        data = form['image'].file
         image_id = uuid.uuid4()
 
-        with open(f'images/{image_id}.{ext}', 'wb') as f:
-            f.write(data)
+        with open(f'images/{image_id}', 'wb') as f:
+            f.write(data.read())
 
-        logger.info(f'Upload success: {image_id}.{ext}')
+        logger.info(f'Upload success: {image_id}')
         self.send_response(201)
         self.send_header('Location',
-                         f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/images/{filename}.{ext}')
+                        f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/images/{image_id}')
 
         self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
         self.wfile.write(open('upload_success.html', 'rb').read())
 
+
+get_routes = {
+        '/': ImageHostingHandler.get_index,
+        '/index.html': ImageHostingHandler.get_index,
+        '/upload': ImageHostingHandler.get_upload,
+        '/images': ImageHostingHandler.get_images,
+        }
+
+post_routes = {
+    '/upload': ImageHostingHandler.post_upload,
+}
 
 def run():
     httpd = HTTPServer(SERVER_ADDRESS, ImageHostingHandler)
