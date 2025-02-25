@@ -29,21 +29,19 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
             '/upload': self.post_upload,
         }
         super().__init__(request, client_address, server)
-        self.do_GET = self.get
-        self.do_POST = self.post
 
-    def get(self):
+    def do_GET(self):
         """Handle GET requests by routing to the appropriate handler or returning a 404 error."""
         if self.path in self.get_routes:
-            self.get_routes[self.path](self)
+            self.get_routes[self.path]()
         else:
             logger.warning(f'GET 404 {self.path}')
             self.send_response(404, 'Not Found')
 
-    def post(self):
+    def do_POST(self):
         """Handle POST requests by routing to the appropriate handler or returning a 405 error."""
         if self.path in self.post_routes:
-            self.post_routes[self.path](self)
+            self.post_routes[self.path]()
         else:
             logger.warning(f'POST 404 {self.path}')
             self.send_response(405, 'Method Not Allowed')
